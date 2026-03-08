@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>תצוגה מקדימה ללוגו</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f4f7f9; font-family: "David", sans-serif; }
+        .logo-box { background: white; padding: 50px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
+        .logo-svg { width: 120px; height: 120px; margin-bottom: 20px; }
+        .logo-text { font-size: 32px; font-weight: bold; color: #1565c0; margin: 0; }
+        .logo-subtext { font-size: 16px; color: #7f8c8d; margin-top: 5px; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+    <div class="logo-box">
+        <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="45" fill="#e3f2fd" />
+            <rect x="25" y="55" width="10" height="20" rx="3" fill="#90caf9" />
+            <rect x="45" y="40" width="10" height="35" rx="3" fill="#42a5f5" />
+            <rect x="65" y="25" width="10" height="50" rx="3" fill="#1565c0" />
+            <path d="M 15 75 Q 35 75, 50 20 T 85 75" fill="none" stroke="#ff9800" stroke-width="4" stroke-linecap="round" />
+        </svg>
+        <h1 class="logo-text">סנדיק סטטיסטיקה</h1>
+        <p class="logo-subtext">SENDIK STATISTICS</p>
+    </div>
+</body>
+</html>
