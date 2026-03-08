@@ -1528,7 +1528,7 @@ print(paste("Done! Results saved to:", getwd(), "/", file_name))
         document.getElementById('S2_medResult').innerHTML = "<h3 style='text-align:center; color:#ff9800;'>מעבד נתונים בענן (Bootstrap 5,000)...</h3>"; document.getElementById('S2_medResult').classList.remove('hidden');
 
         try {
-            const response = await fetch('/.netlify/functions/mediation'
+            const response = await fetch('/.netlify/functions/mediation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: data }) });
             const resData = await response.json(); 
             const a=resData.pathA.B, sa=resData.pathA.SE, df1=resData.pathA.df, b=resData.pathB.B, sb=resData.pathB.SE, df2=resData.pathB.df, c_tag=resData.pathCtag.B, sc=resData.pathCtag.SE, c=resData.pathC.B, sct=resData.pathC.SE, df3=resData.pathC.df, ab=resData.indirectEffect, bootInd=resData.bootCI;
             const tDist=(t,df)=>(1-jStat.studentt.cdf(Math.abs(t),df))*2; const pa=tDist(a/sa,df1), pb=tDist(b/sb,df2), pc=tDist(c_tag/sc,df2), pct=tDist(c/sct,df3); const isSigInd = (bootInd.llci > 0 && bootInd.ulci > 0) || (bootInd.llci < 0 && bootInd.ulci < 0);
