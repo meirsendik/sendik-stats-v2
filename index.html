@@ -103,7 +103,7 @@
         .guide-ul li { margin-bottom: 10px; }
     </style>
 </head>
-<body onload="document.getElementById('loginScreen').style.display='flex'">
+<body>
 
     <div id="loginScreen" class="main-menu" style="display:none;">
         <div class="menu-card" style="max-width: 450px;">
@@ -294,7 +294,8 @@
         
         <div id="S2_analysisArea" class="hidden">
             <div class="s2-tabs-container">
-                <button class="s2-tab-btn active" onclick="S2_switchTab('tab-corr', this)">מתאמי פירסון</button>
+                <button class="s2-tab-btn active" onclick="S2_switchTab('tab-demo', this)">👥 סטטיסטיקה תיאורית</button>
+                <button class="s2-tab-btn" onclick="S2_switchTab('tab-corr', this)">מתאמי פירסון</button>
                 <button class="s2-tab-btn" onclick="S2_switchTab('tab-comp', this)">T ב"ת / ANOVA</button>
                 <button class="s2-tab-btn" onclick="S2_switchTab('tab-paired', this)">T תלויים (מזווגים)</button>
                 <button class="s2-tab-btn" onclick="S2_switchTab('tab-rmanova', this)">מדידות חוזרות</button>
@@ -304,7 +305,19 @@
                 <button class="s2-tab-btn" onclick="S2_switchTab('tab-cat', this)">מיתון קטגוריאלי</button>
             </div>
 
-            <div id="tab-corr" class="s2-tab-content active S2-result-container" style="border-top: none; border-radius: 0 0 10px 10px; margin-top:0;">
+            <div id="tab-demo" class="s2-tab-content active S2-result-container" style="border-top: none; border-radius: 0 0 10px 10px; margin-top:0;">
+                <h3 style="margin-top:0; color:#2980b9;">👥 סטטיסטיקה תיאורית — סעיף משתתפים</h3>
+                <p style="color:#555;">הוסף משתנים דמוגרפיים. המערכת תייצר טבלת תדירויות לקטגוריאליים ומשפטים תיאוריים לכמותיים.</p>
+
+                <div id="S2_demoVarsList" style="margin-bottom:15px;"></div>
+
+                <button onclick="S2_addDemoVar()" style="background:#2980b9; color:white; padding:8px 18px; border-radius:6px; border:none; cursor:pointer; margin-bottom:15px;">+ הוסף משתנה דמוגרפי</button>
+                <button onclick="S2_runDemo()" class="btn-blue" style="width:100%; background:#2980b9; margin-top:5px;">📊 הפק סטטיסטיקה תיאורית</button>
+
+                <div id="S2_demoResult" class="hidden" style="margin-top:20px;"></div>
+            </div>
+
+<div id="tab-corr" class="s2-tab-content S2-result-container" style="border-top: none; border-radius: 0 0 10px 10px; margin-top:0;">
                 <h3 style="margin-top:0; color:#1565c0;">📊 מטריצת מתאמים (Pearson)</h3>
                 <p>בחרו משתנים לשורות ולעמודות. המערכת תחשב מתאמי פירסון, תסמן מובהקות ותייצר פסקת דיווח בפורמט APA.</p>
                 <div class="two-cols">
@@ -322,7 +335,7 @@
                 <button class="btn-blue" style="width: 100%; margin-top: 15px; background:#1565c0;" onclick="S2_genCorr()">צור לוח מתאמים</button>
                 <div id="S2_corrPreview" class="hidden" style="margin-top:20px; border-top: 2px dashed #1565c0; padding-top: 15px;">
                      <div id="S2_corrContent"></div>
-                     <button class="btn-purple" style="width: 100%; background:#1565c0; margin-top:15px; font-size: 16px;" onclick="S3_addItem('מטריצת מתאמים', 'S2_corrContent')">📌 הוסף תוצאות לדוח המסכם</button>
+                     <button class="btn-purple" style="width: 100%; background:#1565c0; margin-top:15px; font-size: 16px;" onclick="S3_addItem(this.dataset.title, 'S2_corrContent')" id="S2_corrAddBtn" data-title="">📌 הוסף תוצאות לדוח המסכם</button>
                 </div>
             </div>
 
@@ -369,7 +382,7 @@
                 <div style="background: #e3f2fd; border-right: 4px solid #1565c0; padding: 10px; margin-bottom: 15px; font-size: 0.9em;">
                     <b>💡 טיפ:</b> משתנים מילוליים דיכוטומיים יקודדו אוטומטית ל-0 ו-1.
                 </div>
-                <div class="two-cols"><div><label>משתנה תלוי (Y):</label><select id="S2_regY" style="width:100%; height:auto;"></select></div></div>
+                <div class="two-cols"><div><label>משתנה תלוי (Y):</label><select id="S2_regY" style="width:100%; height:auto;"></select></div><div><label>תווית המשתנה התלוי (לדיווח):</label><input type="text" id="S2_regYLabel" class="input-label-box" placeholder="למשל: שחיקה תעסוקתית"></div></div>
                 <div class="two-cols" style="margin-top: 15px;">
                     <div><label>בלוק 1 - בקרה / דמוגרפיה:</label><select id="S2_regB1" multiple></select></div>
                     <div><label>בלוק 2 - מנבאים ראשיים:</label><select id="S2_regB2" multiple></select></div>
@@ -522,10 +535,6 @@
     const EMAILJS_SERVICE_ID = "service_iahw4ii";
     const EMAILJS_TEMPLATE_ID = "template_fj6jom9";
 
-    (function(){
-        emailjs.init(EMAILJS_PUBLIC_KEY);
-    })();
-
     // === משתנים גלובליים ===
     let CURRENT_DATA = [];
     let S1_globalExcelData = [];
@@ -545,7 +554,21 @@
 
     // === הגדרות Firebase ===
     const firebaseConfig = { apiKey: "AIzaSyDa_F8AbsO4Q6b8ltdrZJQI-5byGiCQu7I", authDomain: "static-sendik.firebaseapp.com", projectId: "static-sendik", storageBucket: "static-sendik.firebasestorage.app", messagingSenderId: "149811961524", appId: "1:149811961524:web:31939540038d26648d01e1", measurementId: "G-5MSK1XJE6P" };
-    firebase.initializeApp(firebaseConfig); const auth = firebase.auth();
+    let auth;
+    document.addEventListener('DOMContentLoaded', function() {
+        emailjs.init(EMAILJS_PUBLIC_KEY);
+        firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth();
+        document.getElementById('loginScreen').style.display = 'flex';
+
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                const creationTime = new Date(user.metadata.creationTime); const now = new Date(); const daysPassed = Math.ceil(Math.abs(now - creationTime) / (1000 * 60 * 60 * 24)); 
+                if (user.email === ADMIN_EMAIL || daysPassed <= 30) grantAccess();
+                else { document.getElementById('loginScreen').style.display = 'none'; document.getElementById('mainMenu').style.display = 'none'; document.querySelectorAll('.app-container').forEach(d => d.style.display = 'none'); document.getElementById('expiredScreen').style.display = 'flex'; }
+            } else { document.getElementById('expiredScreen').style.display = 'none'; document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('mainMenu').style.display = 'none'; document.querySelectorAll('.app-container').forEach(d => d.style.display = 'none'); }
+        });
+    });
 
     // ==========================================
     // מנגנון משתמשים
@@ -585,13 +608,6 @@
     function logoutUser() { auth.signOut(); }
 
     const ADMIN_EMAIL = "meirsendik@gmail.com";
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            const creationTime = new Date(user.metadata.creationTime); const now = new Date(); const daysPassed = Math.ceil(Math.abs(now - creationTime) / (1000 * 60 * 60 * 24)); 
-            if (user.email === ADMIN_EMAIL || daysPassed <= 30) grantAccess();
-            else { document.getElementById('loginScreen').style.display = 'none'; document.getElementById('mainMenu').style.display = 'none'; document.querySelectorAll('.app-container').forEach(d => d.style.display = 'none'); document.getElementById('expiredScreen').style.display = 'flex'; }
-        } else { document.getElementById('expiredScreen').style.display = 'none'; document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('mainMenu').style.display = 'none'; document.querySelectorAll('.app-container').forEach(d => d.style.display = 'none'); }
-    });
 
     function grantAccess() { document.getElementById('loginScreen').style.display = 'none'; document.getElementById('expiredScreen').style.display = 'none'; document.getElementById('mainMenu').style.display = 'flex'; }
 
@@ -1070,6 +1086,94 @@ print(paste("Done! Results saved to:", getwd(), "/", file_name))
         }); 
     }
 
+    function S2_addDemoVar() {
+        const container = document.getElementById('S2_demoVarsList');
+        const allCols = CURRENT_DATA.length > 0 ? Object.keys(CURRENT_DATA[0]) : [];
+        const div = document.createElement('div');
+        div.style.cssText = 'display:flex; align-items:center; gap:10px; margin-bottom:10px; padding:10px; background:#f8f9fa; border-radius:8px; flex-wrap:wrap;';
+        div.innerHTML = `
+            <select style="flex:2; padding:6px; border-radius:5px; border:1px solid #ccc; min-width:150px;">
+                <option value="">-- בחר עמודה --</option>
+                ${allCols.map(c => `<option value="${c}">${c}</option>`).join('')}
+            </select>
+            <input type="text" placeholder="תווית (אופציונלי)" style="flex:2; padding:6px; border-radius:5px; border:1px solid #ccc; min-width:120px;">
+            <select style="flex:1; padding:6px; border-radius:5px; border:1px solid #ccc; min-width:130px;">
+                <option value="cat">קטגוריאלי (טבלה)</option>
+                <option value="num">כמותי (מילולי)</option>
+            </select>
+            <button onclick="this.parentElement.remove()" style="background:#e74c3c; color:white; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;">❌</button>
+        `;
+        container.appendChild(div);
+    }
+
+    function S2_runDemo() {
+        const rows = document.querySelectorAll('#S2_demoVarsList > div');
+        if (rows.length === 0) return alert('יש להוסיף לפחות משתנה אחד.');
+        if (!CURRENT_DATA || CURRENT_DATA.length === 0) return alert('יש לטעון נתונים תחילה.');
+        const N = CURRENT_DATA.length;
+        const catGroups = [];
+        const numericParts = [];
+
+        rows.forEach(row => {
+            const selects = row.querySelectorAll('select');
+            const col = selects[0].value;
+            const type = selects[1].value;
+            const labelInput = row.querySelector('input[type="text"]').value.trim();
+            const label = labelInput || col;
+            if (!col) return;
+            const vals = CURRENT_DATA.map(r => r[col]).filter(v => v !== undefined && v !== null && String(v).trim() !== '');
+            if (type === 'cat') {
+                const freq = {};
+                vals.forEach(v => { const k = String(v).trim(); freq[k] = (freq[k] || 0) + 1; });
+                const sorted = Object.entries(freq).sort((a,b) => b[1]-a[1]);
+                catGroups.push({ label, vals, sorted });
+            } else {
+                const nums = vals.map(v => parseFloat(v)).filter(v => !isNaN(v));
+                if (nums.length === 0) return;
+                const mean = jStat.mean(nums);
+                const sd = jStat.stdev(nums, true);
+                const min = Math.min(...nums);
+                const max = Math.max(...nums);
+                numericParts.push(`ממוצע ה${label} היה ${mean.toFixed(2)} (SD = ${sd.toFixed(2)}, טווח: ${min.toFixed(0)}–${max.toFixed(0)})`);
+            }
+        });
+
+        // טבלה משולבת לכל הקטגוריאליים
+        let tableHTML = '';
+        if (catGroups.length > 0) {
+            let bodyRows = '';
+            catGroups.forEach(({ label, vals, sorted }) => {
+                sorted.forEach(([k, n], idx) => {
+                    const varCell = idx === 0 ? `<td rowspan="${sorted.length}" style="font-weight:bold; vertical-align:middle;">${label}</td>` : '';
+                    bodyRows += `<tr>${varCell}<td>${k}</td><td>${n}</td><td>${((n/vals.length)*100).toFixed(1)}%</td></tr>`;
+                });
+            });
+            const catLabels = catGroups.map(g => g.label).join(', ');
+            tableHTML = `<div style="text-align:center; margin-bottom:4px; font-size:13px; color:#555;">לוח 1</div>
+                <div style="text-align:center; margin-bottom:8px; font-style:italic; font-size:13px;">התפלגות תלמידי הכיתות הרגילות לפי ${catLabels} (N = ${N})</div>
+                <table class="S2-academic-table">
+                    <thead><tr><th>משתנים</th><th>קטגוריות</th><th>N</th><th>%</th></tr></thead>
+                    <tbody>${bodyRows}</tbody>
+                    <tfoot><tr><td colspan="4" style="border-top: 2px solid #333; padding:0;"></td></tr></tfoot>
+                </table>`;
+        }
+
+        let narrativeHTML = '';
+        if (numericParts.length > 0) {
+            narrativeHTML = `<div class="S2-academic-report" style="margin:15px 0;">
+                במחקר זה השתתפו ${N} משתתפים. ${numericParts.join('; ')}.
+            </div>`;
+        }
+
+        const res = document.getElementById('S2_demoResult');
+        res.innerHTML = `<h3 style="text-align:center; text-decoration:underline;">סטטיסטיקה תיאורית — סעיף משתתפים</h3>
+            ${narrativeHTML}${tableHTML}
+            <button onclick="S3_addItem('סטטיסטיקה תיאורית', 'S2_demoResult')"
+                style="background:#2980b9; color:white; width:100%; padding:12px; margin-top:15px; font-size:16px; border:none; border-radius:6px; cursor:pointer;">
+                📌 הוסף לדוח המסכם</button>`;
+        res.classList.remove('hidden');
+    }
+
     // 0. מטריצת מתאמים
     function getSolidColor(r) { const a=Math.abs(r)*0.4; const R=Math.round((r>0?0:255)*a+255*(1-a)); const G=Math.round(100*a+255*(1-a)); const B=Math.round((r>0?255:0)*a+255*(1-a)); return `rgb(${R},${G},${B})`; }
     function S2_genCorr() {
@@ -1080,7 +1184,9 @@ print(paste("Done! Results saved to:", getwd(), "/", file_name))
         let rLbl = document.getElementById('S2_corrRowLabel').value || 'המשתנים הבלתי תלויים';
         let cLbl = document.getElementById('S2_corrColLabel').value || 'המשתנים התלויים';
         
-        let txt = `על מנת לבחון את הקשרים בין ${rLbl} לבין ${cLbl}, נערכו מבחני מתאם פירסון. לוח המתאמים מוצג להלן:`;
+        let txt = `על מנת לבחון את הקשרים בין ${rLbl} לרכיביה השונים לבין ${cLbl} לרכיביה השונים, נערכו מבחני מתאם פירסון. לוח המתאמים מוצג להלן:`;
+        const corrBtn = document.getElementById('S2_corrAddBtn');
+        if (corrBtn) corrBtn.dataset.title = 'שאלת מחקר - האם קיים קשר בין ' + rLbl + ' לבין ' + cLbl;
         
         let tableHtml = `<div class="S2-academic-report">${txt}</div><div class="S2-table-title">לוח: מתאמי פירסון בין ${rLbl} לבין ${cLbl}</div><table class="S2-stats-table"><thead><tr><th></th>${cs.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`;
         rs.forEach(r => {
@@ -1105,7 +1211,7 @@ print(paste("Done! Results saved to:", getwd(), "/", file_name))
 
     // 1. רגרסיה מרובה / היררכית
     function S2_runRegression() {
-        const yVar = document.getElementById('S2_regY').value; const b1Vars = Array.from(document.getElementById('S2_regB1').selectedOptions).map(o=>o.value); const b2Vars = Array.from(document.getElementById('S2_regB2').selectedOptions).map(o=>o.value);
+        const yVar = document.getElementById('S2_regY').value; const yLabel = document.getElementById('S2_regYLabel').value.trim() || yVar; const b1Vars = Array.from(document.getElementById('S2_regB1').selectedOptions).map(o=>o.value); const b2Vars = Array.from(document.getElementById('S2_regB2').selectedOptions).map(o=>o.value);
         if (!yVar || (b1Vars.length === 0 && b2Vars.length === 0)) return alert("יש לבחור מנבא ותלוי.");
         const allX = [...b1Vars, ...b2Vars];
         let isYNum = CURRENT_DATA.every(r => r[yVar] === undefined || r[yVar] === null || String(r[yVar]).trim() === '' || !isNaN(parseFloat(r[yVar]))); if(!isYNum) return alert("משתנה תלוי חייב להיות כמותי.");
@@ -1127,8 +1233,8 @@ print(paste("Done! Results saved to:", getwd(), "/", file_name))
         let predictorList = isHierarchical
             ? `המשתנים ${[...b1Vars, ...b2Vars].map(v => `<b>${getLabel(v)}</b>`).join(', ')} שימשו כמנבאים`
             : b2Vars.map(v => `<b>${getLabel(v)}</b>`).join(', ') + ` שימש${b2Vars.length > 1 ? 'ו' : ''} כמנב${b2Vars.length > 1 ? 'אים' : 'א'}`;
-        let txt = `על מנת לבחון את תרומתם של ${predictorList} לניבוי <b>${yVar}</b>, נערך ניתוח רגרסיה ליניארית ${isHierarchical ? `היררכית בשני שלבים.` : `מרובה.`} `;
-        let tbl = `<div class="S2-table-title">לוח: מקדמי רגרסיה ליניארית ${isHierarchical ? 'היררכית ' : 'מרובה '}לניבוי ${yVar}</div><table class="S2-academic-table"><thead><tr><th>משתנה מנבא</th><th>B</th><th>SE B</th><th>&beta;</th><th>t</th><th>p</th></tr></thead><tbody>`;
+        let txt = `על מנת לבחון את תרומתם של ${predictorList} לניבוי <b>${yLabel}</b>, נערך ניתוח רגרסיה ליניארית ${isHierarchical ? `היררכית בשני שלבים.` : `מרובה.`} `;
+        let tbl = `<div class="S2-table-title">לוח: מקדמי רגרסיה ליניארית ${isHierarchical ? 'היררכית ' : 'מרובה '}לניבוי ${yLabel}</div><table class="S2-academic-table"><thead><tr><th>משתנה מנבא</th><th>B</th><th>SE B</th><th>&beta;</th><th>t</th><th>p</th></tr></thead><tbody>`;
 
         let R2_1 = 0, df1_model = 0, df1_res = 0;
         if (b1Vars.length > 0) {
@@ -1155,7 +1261,8 @@ print(paste("Done! Results saved to:", getwd(), "/", file_name))
             if (bestPredictor.p < 0.05) txt += ` המנבא החזק ביותר במודל הסופי הוא <b>${bestPredictor.name}</b> <span dir="ltr">(&beta; = ${bestPredictor.realBeta.toFixed(3)}, p ${fmtPText(bestPredictor.p)})</span>.`;
         }
 
-        finalHTML += `<div id="S2_regNarrative" class="S2-academic-report">${txt}</div><div id="S2_regTable">${tbl}</tbody></table></div><button onclick="S3_addItem('מודל רגרסיה לניבוי ${yVar}', 'S2_regResult')" style="background:#1565c0; color:white; padding:10px; width:100%; margin-top:15px; font-size:16px;">📌 הוסף תוצאות לדוח המסכם</button>`;
+        const _regTitle = 'שאלת מחקר - איזה מבין המנבאים ' + allX.join(', ') + ' מצליח לנבא את ' + yLabel;
+        finalHTML += `<div id="S2_regNarrative" class="S2-academic-report">${txt}</div><div id="S2_regTable">${tbl}</tbody></table></div><button onclick="S3_addItem(this.dataset.title, 'S2_regResult')" data-title="${_regTitle}" style="background:#1565c0; color:white; padding:10px; width:100%; margin-top:15px; font-size:16px;">📌 הוסף תוצאות לדוח המסכם</button>`;
         document.getElementById('S2_regResult').innerHTML = finalHTML; document.getElementById('S2_regResult').classList.remove('hidden');
     }
 
@@ -1360,7 +1467,8 @@ print(paste("Done! Results saved to:", getwd(), "/", file_name))
         finalHTML += `</tbody></table>`;
         finalHTML += `<div style="font-size:0.85em; margin-top:5px; color:#555; direction:rtl;">* p&lt;.05, ** p&lt;.01, *** p&lt;.001</div>`;
         finalHTML += `<div class="chart-container"><canvas id="S2_compChart"></canvas><div class="S2-chart-caption">תרשים: ממוצעי ${mainVarName} לפי ${gVar}</div></div>`;
-        finalHTML += `<button onclick="S3_addItem('השוואה: ${gVar}', 'S2_compResult', 'S2_compChart')" style="background:#1565c0; color:white; padding:10px; width:100%; margin-top:15px; font-size:16px;">📌 הוסף תוצאות לדוח המסכם</button>`;
+        const _compTitle = 'שאלת מחקר - האם קיימים הבדלים ב' + mainVarName + ' לפי ' + gVar;
+        finalHTML += `<button onclick="S3_addItem(this.dataset.title, 'S2_compResult', 'S2_compChart')" data-title="${_compTitle}" style="background:#1565c0; color:white; padding:10px; width:100%; margin-top:15px; font-size:16px;">📌 הוסף תוצאות לדוח המסכם</button>`;
 
         document.getElementById('S2_compResult').innerHTML = finalHTML;
         document.getElementById('S2_compResult').classList.remove('hidden');
@@ -1412,7 +1520,8 @@ print(paste("Done! Results saved to:", getwd(), "/", file_name))
         tbl += `<tr><td>${v1}</td><td>${n}</td><td>${m1.toFixed(2)}</td><td>${sd1.toFixed(2)}</td><td rowspan="2" style="vertical-align:middle;" dir="ltr">${tVal.toFixed(2)}</td><td rowspan="2" style="vertical-align:middle;">${df}</td><td rowspan="2" style="vertical-align:middle;" dir="ltr">${fmtPText(pVal).replace('= ','')}${star(pVal)}</td>${sig ? `<td rowspan="2" style="vertical-align:middle;" dir="ltr">${cohenD.toFixed(2)} (${dLabel})</td>` : ''}</tr>`;
         tbl += `<tr><td>${v2}</td><td>${n}</td><td>${m2.toFixed(2)}</td><td>${sd2.toFixed(2)}</td></tr></tbody></table>`;
 
-        let html = `<h3 style="text-align:center; text-decoration:underline;">מבחן T למדגמים תלויים</h3><div class="S2-academic-report">${txt}</div>${tbl}<div class="chart-container"><canvas id="S2_pairedChart"></canvas><div class="S2-chart-caption">תרשים: ממוצעי ${lbl} בשתי המדידות</div></div><button onclick="S3_addItem('מבחן T תלויים: ${lbl}', 'S2_pairedRes', 'S2_pairedChart')" style="background:#1565c0; color:white; padding:10px; width:100%; margin-top:15px; font-size:16px;">📌 הוסף תוצאות לדוח המסכם</button>`;
+        const _pairedTitle = 'שאלת מחקר - האם יש הבדל בין ' + v1 + ' לבין ' + v2 + ' ב' + lbl;
+        let html = `<h3 style="text-align:center; text-decoration:underline;">מבחן T למדגמים תלויים</h3><div class="S2-academic-report">${txt}</div>${tbl}<div class="chart-container"><canvas id="S2_pairedChart"></canvas><div class="S2-chart-caption">תרשים: ממוצעי ${lbl} בשתי המדידות</div></div><button onclick="S3_addItem(this.dataset.title, 'S2_pairedRes', 'S2_pairedChart')" data-title="${_pairedTitle}" style="background:#1565c0; color:white; padding:10px; width:100%; margin-top:15px; font-size:16px;">📌 הוסף תוצאות לדוח המסכם</button>`;
 
         document.getElementById('S2_pairedRes').innerHTML = html;
         document.getElementById('S2_pairedRes').classList.remove('hidden');
@@ -1549,7 +1658,7 @@ print(paste("Done! Results saved to:", getwd(), "/", file_name))
             if (b > 0) txt += `כמו כן, ${lM} בתורה נמצאה קשורה ל${lY}, כך שעלייה ב${lM} קשורה לעלייה ב${lY}. `; else txt += `כמו כן, ${lM} בתורה נמצאה קשורה ל${lY}, כך שעלייה ב${lM} קשורה לירידה ב${lY}. `;
             txt += `בחינת מובהקות הקשר העקיף הניבה רווח סמך אשר ${isSigInd ? 'אינו כולל' : 'כולל'} את הערך 0 (<span dir="ltr">Boot CI [${bootInd.llci.toFixed(3)}, ${bootInd.ulci.toFixed(3)}]</span>), ממצא השקול לאפקט תיווך ${isSigInd ? 'מובהק' : 'לא מובהק'}.`;
             
-            document.getElementById('S2_medResult').innerHTML = `<h3 style="text-align:center; text-decoration:underline;">דוח ממצאים (Mediation Model 4)</h3><div class="S2-academic-report">${txt}</div>${h}<div class="chart-container" style="text-align:center;"><canvas id="S2_medChart" width="600" height="300" style="margin:0 auto;"></canvas><div class="S2-chart-caption">תרשים: מודל נתיבים לבחינת השפעת ${lX} על ${lY} דרך ${lM}</div></div><button onclick="S3_addItem('ניתוח תיווך', 'S2_medResult', 'S2_medChart')" style="background:#ff9800; color:white; width:100%; padding:12px; margin-top:15px; font-size:16px;">📌 הוסף תוצאות לדוח המסכם</button>`;
+            document.getElementById('S2_medResult').innerHTML = `<h3 style="text-align:center; text-decoration:underline;">דוח ממצאים (Mediation Model 4)</h3><div class="S2-academic-report">${txt}</div>${h}<div class="chart-container" style="text-align:center;"><canvas id="S2_medChart" width="600" height="300" style="margin:0 auto;"></canvas><div class="S2-chart-caption">תרשים: מודל נתיבים לבחינת השפעת ${lX} על ${lY} דרך ${lM}</div></div><button onclick="S3_addItem(this.dataset.title, 'S2_medResult', 'S2_medChart')" data-title="שאלת מחקר - האם הקשר בין ${lX} ל${lY} עובר דרך ${lM}" style="background:#ff9800; color:white; width:100%; padding:12px; margin-top:15px; font-size:16px;">📌 הוסף תוצאות לדוח המסכם</button>`;
             
             const cx=document.getElementById('S2_medChart').getContext('2d'); cx.clearRect(0,0,600,300); cx.font="14px Arial"; cx.textAlign="center"; cx.lineWidth=2;
             const pX={x:100,y:200,w:100,h:40}, pM={x:300,y:50,w:100,h:40}, pY={x:500,y:200,w:100,h:40}; [pX,pM,pY].forEach(bb=>cx.strokeRect(bb.x-50,bb.y-15,100,30)); cx.fillText(lX, pX.x, pX.y+5); cx.fillText(lM, pM.x, pM.y+5); cx.fillText(lY, pY.x, pY.y+5);
@@ -1593,7 +1702,7 @@ print(paste("Done! Results saved to:", getwd(), "/", file_name))
             const addSlopeRow = (lbl, b, se, t, p, ci) => { tbl+=`<tr><td>Slope at ${lbl}</td><td>${fmt(b)}</td><td>${fmt(se)}</td><td>${fmt(t)}</td><td dir="ltr">${fmtPText(p).replace('= ','')}</td><td style="color:#d32f2f;">${fmt(ci.llci)}</td><td style="color:#d32f2f;">${fmt(ci.ulci)}</td></tr>`; };
             addSlopeRow(lblLow, sLow, seLow, sLow/seLow, pLow, bootSlopes.low); addSlopeRow(lblHigh, sHigh, seHigh, sHigh/seHigh, pHigh, bootSlopes.high);
             
-            document.getElementById('S2_simpleRes').innerHTML = `<h3 style="text-align:center; text-decoration:underline;">דוח ממצאים (Simple Moderation)</h3><div class="S2-academic-report">${txt}</div>${tbl}</tbody></table><div class="chart-container"><canvas id="S2_simpleChart"></canvas><div class="S2-chart-caption">תרשים: מיתון הקשר בין ${lX} ל-${lY} על ידי ${lW}</div></div><button onclick="S3_addItem('מודל מיתון', 'S2_simpleRes', 'S2_simpleChart')" style="background:#e91e63; color:white; width:100%; padding:12px; margin-top:15px; font-size:16px;">📌 הוסף תוצאות לדוח המסכם</button>`;
+            document.getElementById('S2_simpleRes').innerHTML = `<h3 style="text-align:center; text-decoration:underline;">דוח ממצאים (Simple Moderation)</h3><div class="S2-academic-report">${txt}</div>${tbl}</tbody></table><div class="chart-container"><canvas id="S2_simpleChart"></canvas><div class="S2-chart-caption">תרשים: מיתון הקשר בין ${lX} ל-${lY} על ידי ${lW}</div></div><button onclick="S3_addItem(this.dataset.title, 'S2_simpleRes', 'S2_simpleChart')" data-title="שאלת מחקר - האם ${lW} ממתן את הקשר בין ${lX} לבין ${lY}" style="background:#e91e63; color:white; width:100%; padding:12px; margin-top:15px; font-size:16px;">📌 הוסף תוצאות לדוח המסכם</button>`;
             
             if(S2_charts.simple) S2_charts.simple.destroy(); const sx=jStat.stdev(data.map(d=>d.originalX), true); const xL=-sx, xH=sx; const calcY = (x,w) => B[0] + B[1]*x + B[2]*w + B[3]*x*w;
             S2_charts.simple = new Chart(document.getElementById('S2_simpleChart'), { type:'line', data:{ labels:['Low X (-1SD)','High X (+1SD)'], datasets:[ {label:lblLow, data:[calcY(xL,wLow), calcY(xH,wLow)], borderColor:'blue', fill:false}, {label:lblHigh, data:[calcY(xL,wHigh), calcY(xH,wHigh)], borderColor:'red', fill:false} ] }, options: { animation: false } });
@@ -1628,7 +1737,7 @@ print(paste("Done! Results saved to:", getwd(), "/", file_name))
             tbl+=`<tr><td colspan="7" class="S2-sub-header" style="background:#e3f2fd">שיפועים מותנים בתוך כל קטגוריה (רווחי סמך Boot)</td></tr>`;
             cats.forEach(c => { const st=slopesOLS[c], ci=resData.bootRes[c]; tbl+=`<tr><td>Slope at ${c}</td><td>${fmt(st.b)}</td><td>${fmt(st.se)}</td><td>${fmt(st.b/st.se)}</td><td dir="ltr">${fmtPText(getP(st.b/st.se)).replace('= ','')}</td><td style="color:#8e44ad;">${ci?fmt(ci.llci):'-'}</td><td style="color:#8e44ad;">${ci?fmt(ci.ulci):'-'}</td></tr>`; });
             
-            document.getElementById('S2_catRes').innerHTML = `<h3 style="text-align:center;">דוח מיתון קטגוריאלי</h3><div class="S2-academic-report">${txt}</div>${tbl}</tbody></table><div class="chart-container"><canvas id="S2_catChart"></canvas><div class="S2-chart-caption">תרשים: אינטראקציה קטגוריאלית</div></div><button onclick="S3_addItem('מיתון קטגוריאלי', 'S2_catRes', 'S2_catChart')" style="background:#4caf50; color:white; width:100%; padding:12px; margin-top:15px; font-size:16px;">📌 הוסף תוצאות לדוח המסכם</button>`;
+            document.getElementById('S2_catRes').innerHTML = `<h3 style="text-align:center;">דוח מיתון קטגוריאלי</h3><div class="S2-academic-report">${txt}</div>${tbl}</tbody></table><div class="chart-container"><canvas id="S2_catChart"></canvas><div class="S2-chart-caption">תרשים: אינטראקציה קטגוריאלית</div></div><button onclick="S3_addItem(this.dataset.title, 'S2_catRes', 'S2_catChart')" data-title="שאלת מחקר - האם ${lW} ממתן את הקשר בין ${lX} לבין ${lY}" style="background:#4caf50; color:white; width:100%; padding:12px; margin-top:15px; font-size:16px;">📌 הוסף תוצאות לדוח המסכם</button>`;
             
             if(S2_charts.cat) S2_charts.cat.destroy(); const ctx=document.getElementById('S2_catChart').getContext('2d'); const minX=Math.min(...raw.map(d=>d.x)), maxX=Math.max(...raw.map(d=>d.x)); const ds=[]; cats.forEach((cat, idx) => { let b0_val = resB.B[0]; for(let j=1; j<=k; j++) { let isOne = 0; if(method==='sequential') { if(idx >= j) isOne=1; } else { if(cat === cats[j]) isOne=1; } if(isOne) b0_val += resB.B[1+j]; } const slope = slopesOLS[cat].b, y1 = b0_val + slope * (minX - mx), y2 = b0_val + slope * (maxX - mx); ds.push({ label: cat, data: [{x:minX, y:y1}, {x:maxX, y:y2}], borderColor: ['black','blue','red','green','orange'][idx%5], fill: false }); });
             S2_charts.cat = new Chart(ctx, {type:'line', data:{datasets:ds}, options:{ animation: false, scales:{x:{type:'linear'}}}});
